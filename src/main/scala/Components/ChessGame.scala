@@ -90,18 +90,18 @@ class ChessGame(val board : Board):
             false
 
     private def linePositions(start: Position, end: Position): Boolean =
-        val deltax = start.x - end.x
-        val deltay = start.y - end.y
+        val deltax = math.abs(start.x - end.x)
+        val deltay = math.abs(start.y - end.y)
         val lineCol = deltax == 0 || deltay == 0
         if lineCol then
-            val a = math.min(start.x,end.x)
-            val b = math.min(start.y, end.y)
+            val signX = if start.x > end.x then -1 else 1 
+            val signY = if start.y > end.y then -1 else 1
             val positions = for
-                xs <- 1 until deltax
-                ys <- 1 until deltay
+                xs <- if deltax == 0 then Seq(0) else 0 to deltax
+                ys <- if deltay == 0 then Seq(0) else 0 to deltay
             yield
-                Position((a+xs).toByte, (b + ys).toByte)
-            positions.forall(pos => board.get(pos) == Piece.Empty)
+                Position((start.x + signX * xs).toByte, (start.y + signY * ys).toByte)
+            positions.forall(pos => if pos == start || pos == end then true else board.getOrElse(pos, Piece.Empty) == Piece.Empty)
         else
             false
     /**

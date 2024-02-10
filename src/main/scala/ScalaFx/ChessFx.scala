@@ -33,6 +33,7 @@ object ChessFx extends JFXApp3 {
     val startBoard = Board.startBoard()
     startBoard.remove(Position(4,2))
     startBoard.remove(Position(2,2))
+    startBoard.addOne(Position(4,3) -> Piece.Rook(false))
     val game = ChessGame(startBoard)
     val observableBoard : ObservableMap[Position, Piece] = ObservableMap(game.board.toSeq*)
     
