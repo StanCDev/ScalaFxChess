@@ -61,7 +61,7 @@ class ChessGame(val board : Board):
             val forward2 = (start.x == end.x) && (start.y - 2 == end.y) && endPiece == Piece.Empty
             val diag = 
                 endPiece != Piece.Empty 
-                && !endPiece.isWhite 
+                && endPiece.isWhite 
                 && (start.x == end.x + 1 && start.y - 1 == end.y || start.x == end.x - 1 && start.y - 1 == end.y)
             //println("forward: " +forward+ " forward2: " + (forward2 && start.y == 7)+ " diag: "+diag)
             forward || diag || (forward2 && start.y == 7)
@@ -69,7 +69,7 @@ class ChessGame(val board : Board):
 
     private def knightMove(start: Position, end: Position, isWhite : Boolean): Boolean = 
         val deltax = math.abs(start.x - end.x)
-        val deltay = math.abs(start.y -end.y)
+        val deltay = math.abs(start.y - end.y)
         (deltax == 1 && deltay == 2) || (deltax == 2 && deltay == 1)
 
     private def bishopMove(start: Position, end: Position, isWhite : Boolean): Boolean = 
@@ -112,17 +112,20 @@ class ChessGame(val board : Board):
       * @return
       */
     private def diagonalPositions(start: Position, end: Position): Boolean =
-        val deltax = start.x - end.x
-        val deltay = start.y - end.y
+        val deltax = math.abs(end.x - start.x)
+        val deltay = math.abs(end.y - start.y)
         val diag = deltax == deltay
         if diag then
-            val a = math.min(start.x,end.x)
-            val b = math.min(start.y, end.y)
+            val signX = if start.x > end.x then -1 else 1 
+            val signY = if start.y > end.y then -1 else 1 
             val positions = for
-                xy <- 1 until deltax
+                i <- 0 to deltax // 1 until deltax
             yield
-                Position((a + xy).toByte, (b+xy).toByte)
-            positions.forall(pos => board.get(pos) == Piece.Empty)
+                Position((start.x + signX * i).toByte, (start.y + signY * i).toByte)
+
+            positions.forall(pos => if pos == start || pos == end then true else board.getOrElse(pos, Piece.Empty) == Piece.Empty)
+
+            
         else
             false
 

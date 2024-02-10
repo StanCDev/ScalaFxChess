@@ -30,7 +30,10 @@ import scalafx.scene.control.Button
 
 object ChessFx extends JFXApp3 {
 
-    val game = ChessGame(Board.startBoard())
+    val startBoard = Board.startBoard()
+    startBoard.remove(Position(4,2))
+    startBoard.remove(Position(2,2))
+    val game = ChessGame(startBoard)
     val observableBoard : ObservableMap[Position, Piece] = ObservableMap(game.board.toSeq*)
     
 
