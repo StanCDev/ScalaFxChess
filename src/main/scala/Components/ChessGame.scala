@@ -36,11 +36,13 @@ class ChessGame(val board : Board):
 
     def makeMove(start: Position, end: Position): Boolean = 
         val canMove = legalMove(start,end)
+        println(f"Move is legal ${canMove}")
         if canMove then
             val pieceStart = board.getOrElse(start, Piece.Empty)
             val pieceEnd = board.get(end)
             board.remove(start)
             board.update(end,pieceStart)
+            // board.foreach(e => println(e))
             true
         else false
 

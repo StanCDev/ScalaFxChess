@@ -32,9 +32,9 @@ import scalafx.scene.Group
 object ChessFx extends JFXApp3 {
 
     val startBoard = Board.startBoard()
-    startBoard.remove(Position(4,2))
-    startBoard.remove(Position(2,2))
-    startBoard.addOne(Position(4,3) -> Piece.Rook(false))
+    // startBoard.remove(Position(4,2))
+    // startBoard.remove(Position(2,2))
+    // startBoard.addOne(Position(4,3) -> Piece.Rook(false))
     val game = ChessGame(startBoard)
     val observableBoard : ObservableMap[Position, Piece] = ObservableMap(game.board.toSeq*)
     
@@ -138,7 +138,8 @@ object ChessFx extends JFXApp3 {
             var (offsetX, offsetY) = doubles._1
             var (x,y) = doubles._2
             val start = squareFromPos(svg.layoutX.value, svg.layoutY.value, 800,800)// TODO: gridPane.width.value, gridPane.height.value)
-            val originalColor = svg.fill.getValue()
+            println(f"Start: $start")
+            //val originalColor = svg.fill.getValue()
 
             svg.setOnMousePressed(e => 
                 // Capture the initial mouse cursor position
@@ -146,10 +147,10 @@ object ChessFx extends JFXApp3 {
                     svg.setOpacity(0.5)
                     offsetX = e.getSceneX() - svg.getLayoutX()
                     offsetY = e.getSceneY() - svg.getLayoutY()
-                    svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
+                    //svgPieces.addOne(start,(svg, ((offsetX, offsetY), (x,y))))
                     //panes(23).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);")
                     //game.allPossibleMoves(start).foreach(p => println(p))
-                    val dests = game.allPossibleMoves(start).map(pos => pos.x + (8-pos.y)*8 -1 )
+                    val dests = game.allPossibleMoves(pos).map(pos => pos.x + (8-pos.y)*8 -1 )
                     //(1 to 8).foreach(y => (1 to 8).foreach(x => println(f"Pos($x,$y) = ${Position(x.toByte,y.toByte)} mapped to ${x +(8-y)*8 -1 }")))
                     dests.foreach(i => panes(i).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);"))
             )
@@ -162,14 +163,18 @@ object ChessFx extends JFXApp3 {
                     svg.layoutY.set(newY)
                     x = newX
                     y = newY
-                    svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
+                    //svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
                 });
 
             svg.setOnMouseReleased(e => 
                     panes.foreach( (i, pane) => pane.style.set(f"-fx-background-color: ${if isWhiteCell(i) then sandyBrown else sandyBrownDark};"))
                     val end = squareFromPos(x, y, gridPane.width.value, gridPane.height.value)
                     println("End position: " + end)
-                    val moveIsLegal = game.makeMove(start,end) // game.legalMove(start,end)
+                    //TESTING HERE
+                    println(f"Start piece: ${game.board.getOrElse(pos, Piece.Empty)} , Start pos: $pos")// println(f"Start piece: ${game.board.getOrElse(start, Piece.Empty)} , Start pos: $start")
+                    println(f"End piece: ${game.board.getOrElse(end, Piece.Empty)} , end pos: $end")
+                    //
+                    val moveIsLegal = game.makeMove(pos,end) // game.legalMove(start,end)
                     val p = 
                         if moveIsLegal then
                             svgPieces.get(end) match
@@ -181,16 +186,12 @@ object ChessFx extends JFXApp3 {
                             clampToSquare(end, gridPane.width.value, gridPane.height.value, 0, 0)
                         else
                             clampToSquare(start, gridPane.width.value, gridPane.height.value, 0, 0)
-                    //TESTING HERE
-                    println(f"Start piece: ${game.board.getOrElse(start, Piece.Empty)} , Start pos: $start")
-                    println(f"End piece: ${game.board.getOrElse(end, Piece.Empty)} , end pos: $end")
-                    //
                     svg.layoutX.set(p._1)
                     svg.layoutY.set(p._2)
                     svg.setOpacity(1)
                     //svg.fill = ???
                     svgPieces.remove(pos)
-                    svgPieces.addOne(end,(svg, ((offsetX, offsetY), (x,y))))
+                    svgPieces.update(end,(svg, ((offsetX, offsetY), (x,y))))
             )
             )
 
@@ -214,10 +215,10 @@ object ChessFx extends JFXApp3 {
     private def isWhiteCell(i : Int): Boolean = if (i / 8 ) % 2 == 0 then (i+1) % 2 == 0 else i % 2 == 0 
 
     private def squareFromPos(x: Double, y : Double, w : Double, h : Double): Position = 
-        println(f"x: $x , y: $y , w: $w , h: $h" )
+        //println(f"x: $x , y: $y , w: $w , h: $h" )
         val tileX = (math.floor( ( x / w ) *  8 + {if x != w then 1 else 0})).toByte
         val tileY = (9 - math.floor((y / h) * 8 +  {if y != h then 1 else 0})).toByte
-        println(f"tileX, $tileX , tileY: $tileY")
+        //println(f"tileX, $tileX , tileY: $tileY")
         Position(tileX , tileY)
 
     private def clampToSquare(square : Position, w : Double, h : Double, itemW: Double = 0, itemH: Double = 0) = 
@@ -236,7 +237,7 @@ object ChessFx extends JFXApp3 {
     
     private def makeSVG(piece: Piece, pos: Position, w : Double, h: Double): SVGPath = 
         new SVGPath {
-                println(f"Piece : $piece , Position: $pos")
+                //println(f"Piece : $piece , Position: $pos")
                 content = PieceSVG.toSVG(piece) //Might have to change this
                 fill = if piece.isWhite then Color.White else Color.Black
                 stroke = Color.Black

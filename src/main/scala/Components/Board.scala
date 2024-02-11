@@ -5,26 +5,6 @@ import scala.collection.mutable.Map
 
 type Board = Map[Position, Piece]
 
-// class Board(map : Map[Position, Piece]){
-//   private var board : Map[Position, Piece] = map
-//   def size = board.size
-
-//   def isEmpty: Boolean = size == 0
-
-//   def get(p : Position): Piece = this.board.getOrElse(p, Piece.Empty)
-
-//   def add(map :  Map[Position, Piece]): Unit = 
-//     this.board = this.board ++ map
-  
-//   def filter(predicate :((Position, Piece)) => Boolean): Board = Board(board.filter(predicate))
-//   def forall(predicate :((Position, Piece)) => Boolean): Boolean = board.forall(predicate)
-  
-//   def sub(key : Position): Unit = this.board = this.board - key
-    
-//   def add(p: Position, piece : Piece): Unit =
-//     this.board = this.board.updated(p,piece)
-// }
-
 object Board:
     val size = 8
     def empty : Board = Map[Position, Piece]()

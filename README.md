@@ -6,6 +6,8 @@
 
 Local two player game of chess.
 
+![image info](./res/gameWindow.png)
+
 ### Contributors
 
 [alicecnm](https://github.com/alicecnm/)
