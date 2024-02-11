@@ -26,6 +26,7 @@ import Components.Position
 import scalafx.collections.ObservableMap
 import scalafx.beans.property.IntegerProperty
 import scalafx.scene.control.Button
+import scalafx.scene.Group
 
 
 object ChessFx extends JFXApp3 {
@@ -89,11 +90,11 @@ object ChessFx extends JFXApp3 {
         
 
         //given a click detect what pane it is in
-        panes.foreach( (i, pane) => {}
-            // pane.setOnMouseClicked(
-            //     e =>
-            //     println(f"clicked on pane $i")
-            // )
+        panes.foreach( (i, pane) => 
+            pane.setOnMouseClicked(
+                e =>
+                println(f"clicked on pane $i")
+            )
         )
 
         val messagePane = new Pane {
@@ -114,25 +115,28 @@ object ChessFx extends JFXApp3 {
         // val buttonPane = new Pane {
         //     children = b
         // }
+        val pcs = Group(svgPieces.map( (k,v) => v._1).toSeq*)
         
         val mixedPane = new BorderPane(){
                 //top = buttonPane
-                center = gridPane
+                center = Group(gridPane, pcs)
                 bottom = messagePane
                 style = f"-fx-border-color: black; -fx-border-width: 2px; -fx-background-color: ${paleBlue};"
                 // left = new Pane()
                 // override def height: ReadOnlyDoubleProperty = DoubleProperty( resetButtonPane.height.toDouble + gridPane.height.toDouble + messagePane.height.toDouble )
             }
+        // observableBoard.addListener(e => 
+        //     if e.wasRemoved() then 
+        //         println(f"${e.getValueRemoved()} was removed")
+        //         pcs.children.add(Label("hello"))
+        //     else if e.wasAdded() then ()
+        // )
 
-        val pcs = svgPieces.map( (k,v) => k).toSeq
-        observableBoard.addListener(e => 
-            if e.wasRemoved() then ???
-            else if e.wasAdded() then ???
-            ???)
-
-        svgPieces.foreach( (svg, pos) => 
-            var (offsetX, offsetY) = pos._1
-            var (x,y) = pos._2
+        svgPieces.foreach( (pos, rest) => 
+            val svg = rest._1
+            val doubles = rest._2
+            var (offsetX, offsetY) = doubles._1
+            var (x,y) = doubles._2
             val start = squareFromPos(svg.layoutX.value, svg.layoutY.value, 800,800)// TODO: gridPane.width.value, gridPane.height.value)
             val originalColor = svg.fill.getValue()
 
@@ -142,7 +146,7 @@ object ChessFx extends JFXApp3 {
                     svg.setOpacity(0.5)
                     offsetX = e.getSceneX() - svg.getLayoutX()
                     offsetY = e.getSceneY() - svg.getLayoutY()
-                    svgPieces.addOne(svg, ((offsetX, offsetY), (x,y)))
+                    svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
                     //panes(23).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);")
                     //game.allPossibleMoves(start).foreach(p => println(p))
                     val dests = game.allPossibleMoves(start).map(pos => pos.x + (8-pos.y)*8 -1 )
@@ -158,7 +162,7 @@ object ChessFx extends JFXApp3 {
                     svg.layoutY.set(newY)
                     x = newX
                     y = newY
-                    svgPieces.addOne(svg, ((offsetX, offsetY), (x,y)))
+                    svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
                 });
 
             svg.setOnMouseReleased(e => 
@@ -166,8 +170,15 @@ object ChessFx extends JFXApp3 {
                     val end = squareFromPos(x, y, gridPane.width.value, gridPane.height.value)
                     println("End position: " + end)
                     val moveIsLegal = game.makeMove(start,end) // game.legalMove(start,end)
-                    val p = if moveIsLegal then 
-                        clampToSquare(end, gridPane.width.value, gridPane.height.value, 0, 0)
+                    val p = 
+                        if moveIsLegal then
+                            svgPieces.get(end) match
+                                case None => 
+                                case Some(value) =>
+                                    val toRemove = pcs.children.indexOf(value._1)
+                                    println("to remove value: " + toRemove)
+                                    if toRemove >= 0 then pcs.children.remove(toRemove)
+                            clampToSquare(end, gridPane.width.value, gridPane.height.value, 0, 0)
                         else
                             clampToSquare(start, gridPane.width.value, gridPane.height.value, 0, 0)
                     //TESTING HERE
@@ -178,11 +189,11 @@ object ChessFx extends JFXApp3 {
                     svg.layoutY.set(p._2)
                     svg.setOpacity(1)
                     //svg.fill = ???
-                    svgPieces.addOne(svg, ((offsetX, offsetY), (x,y)))
+                    svgPieces.remove(pos)
+                    svgPieces.addOne(end,(svg, ((offsetX, offsetY), (x,y))))
             )
             )
 
-        
         stage = new JFXApp3.PrimaryStage {
         // override def width = mixedPane.width
         // override def height = mixedPane.height
@@ -190,8 +201,8 @@ object ChessFx extends JFXApp3 {
 
 
         title = "ChessFx"
-        scene = new Scene(/*sceneWidth, sceneHeight*/){
-            content = Seq(mixedPane) ++ pcs
+        scene = new Scene(mixedPane){
+            //content = pcs
             //gridPane.children = dragLabel
         }
             //gridPane.children = dragLabel
@@ -219,8 +230,8 @@ object ChessFx extends JFXApp3 {
     private def clamp(newX : Double, newY : Double, w : Double, h : Double) = 
         (math.min( math.max(0, newX), w) , math.min( math.max(0, newY), h))
 
-    private def initBoard(w : Double, h : Double): ObservableMap[SVGPath, ((Double, Double), (Double, Double))] = 
-        ObservableMap(game.board.map((pos, piece) => ( makeSVG(piece, pos, 800, 800),  ( (0d,0d), (0d,0d)  )  )).toSeq*)
+    private def initBoard(w : Double, h : Double): ObservableMap[Position,( SVGPath, ((Double, Double), (Double, Double)))] = 
+        ObservableMap(game.board.map((pos, piece) => (pos, ( makeSVG(piece, pos, 800, 800),  ( (0d,0d), (0d,0d)  )  )) ).toSeq*)
 
     
     private def makeSVG(piece: Piece, pos: Position, w : Double, h: Double): SVGPath = 
