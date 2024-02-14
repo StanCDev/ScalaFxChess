@@ -8,7 +8,7 @@ Local two player game of chess.
 
 ## User Guide
 
-Make sure SBT and scala 3 are installed.
+Make sure [SBT](https://www.scala-sbt.org/download/) and [scala 3](https://www.scala-lang.org/download/) are installed.
 
 1. `cd` into ScalaFxChess
 2. type `sbt` in terminal
