@@ -16,8 +16,10 @@ class ChessGame(val board : Board):
     
     import CastlingState.*
 
-    private var whiteCanCastle = CanCastle
-    private var blackCanCastle = CanCastle
+    private var whiteCanCastleL = CanCastle
+    private var whiteCanCastleR = CanCastle
+    private var blackCanCastleL = CanCastle
+    private var blackCanCastleR = CanCastle
 
     def legalMove(start: Position, end: Position): Boolean =
         val startPiece = board.getOrElse(start, Piece.Empty)
@@ -36,13 +38,17 @@ class ChessGame(val board : Board):
 
     def makeMove(start: Position, end: Position): Boolean = 
         val canMove = legalMove(start,end)
+        val isCastlingMove = isCastleMove(start, end)
         println(f"Move is legal ${canMove}")
-        if canMove then
+        if canMove && !isCastlingMove then
             val pieceStart = board.getOrElse(start, Piece.Empty)
             val pieceEnd = board.get(end)
             board.remove(start)
             board.update(end,pieceStart)
             // board.foreach(e => println(e))
+            true
+        else if canMove && isCastlingMove then 
+            ???
             true
         else false
 
@@ -83,10 +89,12 @@ class ChessGame(val board : Board):
     private def rookMove(start: Position, end: Position, isWhite : Boolean): Boolean =
         val rookCanMove = linePositions(start,end)
         if isWhite && rookCanMove then
-            whiteCanCastle = CantCastle
+            if start == Position.fromString("h1") then whiteCanCastleR = CantCastle
+            else if start == Position.fromString("a1") then whiteCanCastleL = CantCastle
             true
         else if !isWhite && rookCanMove then
-            blackCanCastle = CantCastle
+            if start == Position.fromString("h8") then whiteCanCastleR = CantCastle
+            else if start == Position.fromString("a8") then whiteCanCastleL = CantCastle
             true
         else
             false
@@ -136,26 +144,35 @@ class ChessGame(val board : Board):
         val oneSquare = math.max( math.abs(start.x - end.x) , math.abs(start.y - end.y)) == 1 //&& !isInCheckAt(end, isWhite)
 
         if oneSquare then 
-            (if isWhite then whiteCanCastle = CantCastle else blackCanCastle = CantCastle)
+            (if isWhite then
+                whiteCanCastleR = CantCastle 
+                whiteCanCastleL = CantCastle 
+            else 
+                blackCanCastleR = CantCastle
+                blackCanCastleL = CantCastle
+                )
             return true
             //If youre moving one square away no need to check for any castling
         
         val castling = if isWhite then 
-            if start != Position(5,1) then false
+            if start != Position.fromString("e1") then false
             else
                 //castle right
-                if end == Position(7,1) then 
-                    whiteCanCastle == CanCastle 
-                    && board.get(Position(6,1)) == Piece.Empty 
+                if end == Position.fromString("g1") then 
+                    println("Want to castle right")
+                    //println(f"$whiteCanCastleR , ${board.get(Position.fromString("f1")) == Piece.Empty } ,  ${!isInCheckAt(Position(6,1), isWhite)}")
+                    whiteCanCastleR == CanCastle 
+                    && board.getOrElse(Position.fromString("f1"), Piece.Empty) == Piece.Empty 
                     && !isInCheckAt(Position(6,1), isWhite)
-                    && board.get(Position(7,1)) == Piece.Empty 
+                    && board.getOrElse(Position.fromString("g1"), Piece.Empty) == Piece.Empty 
                     && !isInCheckAt(Position(7,1), isWhite)
                 //castle left
                 else if end == Position(3,1) then
-                    whiteCanCastle == CanCastle 
-                    && board.get(Position(4,1)) == Piece.Empty 
+                    println("Want to castle left")
+                    whiteCanCastleL == CanCastle 
+                    && board.getOrElse(Position(4,1), Piece.Empty) == Piece.Empty 
                     && !isInCheckAt(Position(4,1), isWhite)
-                    && board.get(Position(3,1)) == Piece.Empty 
+                    && board.getOrElse(Position(3,1), Piece.Empty) == Piece.Empty 
                     && !isInCheckAt(Position(3,1), isWhite)
                 else false
         else
@@ -164,29 +181,60 @@ class ChessGame(val board : Board):
             {
             //castle right
             if end == Position(7,8) then 
-                whiteCanCastle == CanCastle 
-                && board.get(Position(6,8)) == Piece.Empty 
+                println("Want to castle right")
+                whiteCanCastleR == CanCastle 
+                && board.getOrElse(Position(6,8), Piece.Empty) == Piece.Empty 
                 && !isInCheckAt(Position(6,8), isWhite)
-                && board.get(Position(7,8)) == Piece.Empty 
+                && board.getOrElse(Position(7,8), Piece.Empty) == Piece.Empty 
                 && !isInCheckAt(Position(7,8), isWhite)
             //castle left
             else if end == Position(3,8) then
-                whiteCanCastle == CanCastle 
-                && board.get(Position(4,8)) == Piece.Empty 
+                println("Want to castle left")
+                whiteCanCastleL == CanCastle 
+                && board.getOrElse(Position(4,8), Piece.Empty) == Piece.Empty 
                 && !isInCheckAt(Position(4,8), isWhite)
-                && board.get(Position(3,8)) == Piece.Empty 
+                && board.getOrElse(Position(3,8), Piece.Empty) == Piece.Empty 
                 && !isInCheckAt(Position(3,8), isWhite)
             else false
             }
-        if castling && isWhite then whiteCanCastle = CantCastle
-        else if castling && !isWhite then blackCanCastle = CantCastle
+        if castling && isWhite then 
+            whiteCanCastleL = CantCastle
+            whiteCanCastleR = CantCastle
+        else if castling && !isWhite then 
+            blackCanCastleL = CantCastle
+            blackCanCastleR = CantCastle
 
         oneSquare || castling
 
+
+    def leftWhiteCastle(start : Position, end : Position) = 
+        start == Position.fromString("e1") 
+        && end == Position.fromString("c1")
+
+    def rightWhiteCastle(start : Position, end : Position) = 
+        start == Position.fromString("e1") 
+        && end == Position.fromString("h1")
+
+    def leftBlackCastle(start : Position, end : Position) = 
+        start == Position.fromString("e8") 
+        && end == Position.fromString("c8")
+
+    def rightBlackCastle(start : Position, end : Position) = 
+        start == Position.fromString("e8") 
+        && end == Position.fromString("h8")
+
+    
+    def isCastleMove(start : Position, end : Position): Boolean = 
+        leftWhiteCastle(start,end)
+        || rightWhiteCastle(start,end)
+        || leftBlackCastle(start,end)
+        || rightBlackCastle(start,end)
+
+    
     def isInCheckAt(position : Position, isWhite : Boolean): Boolean = 
         //For all pieces of opposite color, check that king(isWhite) not contained in their list
-        val filtered = board.filter((pos, piece) => !isWhite) 
-        if filtered.isEmpty then false else filtered.forall((pos, piece)=>  !allPossibleMoves(pos).contains(position))
+        val filtered = board.filter((pos, piece) => piece.isWhite ^ isWhite) 
+        if filtered.isEmpty then false else filtered.exists((pos, piece)=>  allPossibleMoves(pos).contains(position))
         
     /**
       * 

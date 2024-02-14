@@ -27,15 +27,19 @@ import scalafx.collections.ObservableMap
 import scalafx.beans.property.IntegerProperty
 import scalafx.scene.control.Button
 import scalafx.scene.Group
-
+import scalafx.animation.AnimationTimer
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+import scala.compiletime.ops.double
+import scala.util.boundary
 
 object ChessFx extends JFXApp3 {
 
     val startBoard = Board.startBoard()
-    // startBoard.remove(Position(4,2))
-    // startBoard.remove(Position(2,2))
-    // startBoard.addOne(Position(4,3) -> Piece.Rook(false))
     val game = ChessGame(startBoard)
+    // game.makeMove(Position.fromString("A2"), Position.fromString("A4"))
+    // game.makeMove(Position.fromString("A4"), Position.fromString("A5"))
+    // game.makeMove(Position.fromString("A5"), Position.fromString("A6"))
     val observableBoard : ObservableMap[Position, Piece] = ObservableMap(game.board.toSeq*)
     
 
@@ -131,69 +135,85 @@ object ChessFx extends JFXApp3 {
         //         pcs.children.add(Label("hello"))
         //     else if e.wasAdded() then ()
         // )
-
-        svgPieces.foreach( (pos, rest) => 
-            val svg = rest._1
-            val doubles = rest._2
-            var (offsetX, offsetY) = doubles._1
-            var (x,y) = doubles._2
-            val start = squareFromPos(svg.layoutX.value, svg.layoutY.value, 800,800)// TODO: gridPane.width.value, gridPane.height.value)
-            println(f"Start: $start")
-            //val originalColor = svg.fill.getValue()
-
-            svg.setOnMousePressed(e => 
-                // Capture the initial mouse cursor position
-                    //svg.fill = Paint.valueOf("red")
-                    svg.setOpacity(0.5)
-                    offsetX = e.getSceneX() - svg.getLayoutX()
-                    offsetY = e.getSceneY() - svg.getLayoutY()
-                    //svgPieces.addOne(start,(svg, ((offsetX, offsetY), (x,y))))
-                    //panes(23).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);")
-                    //game.allPossibleMoves(start).foreach(p => println(p))
-                    val dests = game.allPossibleMoves(pos).map(pos => pos.x + (8-pos.y)*8 -1 )
-                    //(1 to 8).foreach(y => (1 to 8).foreach(x => println(f"Pos($x,$y) = ${Position(x.toByte,y.toByte)} mapped to ${x +(8-y)*8 -1 }")))
-                    dests.foreach(i => panes(i).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);"))
-            )
+        
+        mixedPane.setOnMouseMoved(e0 =>
+        //val timer = AnimationTimer(t => 
+        
+            svgPieces.foreach( (pos, rest) => 
+                
+                val svg = rest._1
+                val doubles = rest._2
+                var (offsetX, offsetY) = doubles._1
+                var (x,y) = doubles._2
+                val start = squareFromPos(svg.layoutX.value, svg.layoutY.value, 800,800)// TODO: gridPane.width.value, gridPane.height.value)
+                //val originalColor = svg.fill.getValue()
 
 
-            svg.setOnMouseDragged(e => {
-                    // Update the text position based on mouse cursor movement
-                    val (newX, newY) = clamp(e.getSceneX() - offsetX, e.getSceneY() - offsetY, gridPane.width.value, gridPane.height.value)
-                    svg.layoutX.set(newX)
-                    svg.layoutY.set(newY)
-                    x = newX
-                    y = newY
-                    //svgPieces.addOne(pos,(svg, ((offsetX, offsetY), (x,y))))
-                });
+                svg.setOnMousePressed(e => 
+                    // Capture the initial mouse cursor position
+                        println(f"Start: $start , Pos: $pos")
+                        println(if start == pos then "" else "start not equal to pos")
+                        
+                        svg.setOpacity(0.5)
+                        offsetX = e.getSceneX() - svg.getLayoutX()
+                        offsetY = e.getSceneY() - svg.getLayoutY()
+                        
+                        //svgPieces.update(start,(svg, ((offsetX, offsetY), (x,y))))
 
-            svg.setOnMouseReleased(e => 
-                    panes.foreach( (i, pane) => pane.style.set(f"-fx-background-color: ${if isWhiteCell(i) then sandyBrown else sandyBrownDark};"))
-                    val end = squareFromPos(x, y, gridPane.width.value, gridPane.height.value)
-                    println("End position: " + end)
-                    //TESTING HERE
-                    println(f"Start piece: ${game.board.getOrElse(pos, Piece.Empty)} , Start pos: $pos")// println(f"Start piece: ${game.board.getOrElse(start, Piece.Empty)} , Start pos: $start")
-                    println(f"End piece: ${game.board.getOrElse(end, Piece.Empty)} , end pos: $end")
-                    //
-                    val moveIsLegal = game.makeMove(pos,end) // game.legalMove(start,end)
-                    val p = 
-                        if moveIsLegal then
-                            svgPieces.get(end) match
-                                case None => 
-                                case Some(value) =>
-                                    val toRemove = pcs.children.indexOf(value._1)
-                                    println("to remove value: " + toRemove)
-                                    if toRemove >= 0 then pcs.children.remove(toRemove)
-                            clampToSquare(end, gridPane.width.value, gridPane.height.value, 0, 0)
-                        else
-                            clampToSquare(start, gridPane.width.value, gridPane.height.value, 0, 0)
-                    svg.layoutX.set(p._1)
-                    svg.layoutY.set(p._2)
-                    svg.setOpacity(1)
-                    //svg.fill = ???
-                    svgPieces.remove(pos)
-                    svgPieces.update(end,(svg, ((offsetX, offsetY), (x,y))))
-            )
-            )
+                        val dests = game.allPossibleMoves(pos).map(pos => pos.x + (8-pos.y)*8 -1 )
+                        dests.foreach(i => panes(i).style.set("-fx-background-color: beige, rgba(255, 0, 0, 0.3);"))
+                        e.consume()
+                )
+
+
+                svg.setOnMouseDragged(e => 
+                        // Update the text position based on mouse cursor movement
+                        val (newX, newY) = clamp(e.getSceneX() - offsetX, e.getSceneY() - offsetY, gridPane.width.value, gridPane.height.value)
+                        svg.layoutX.set(newX)
+                        svg.layoutY.set(newY)
+                        x = newX
+                        y = newY
+                        e.consume()
+                        //svgPieces.update(pos,(svg, ((offsetX, offsetY), (x,y))))
+                    )
+
+                svg.setOnMouseReleased(e => 
+                        panes.foreach( (i, pane) => pane.style.set(f"-fx-background-color: ${if isWhiteCell(i) then sandyBrown else sandyBrownDark};"))
+                        val end = squareFromPos(x, y, gridPane.width.value, gridPane.height.value)
+                        println("End position: " + end)
+                        //TESTING HERE
+                        println(f"Start piece: ${game.board.getOrElse(pos, Piece.Empty)} , Start pos: $pos")// println(f"Start piece: ${game.board.getOrElse(start, Piece.Empty)} , Start pos: $start")
+                        println(f"End piece: ${game.board.getOrElse(end, Piece.Empty)} , end pos: $end")
+                        println(f"map size: ${svgPieces.size} , pcs size: ${pcs.children.length}")
+                        //
+                        var break = false
+                        val moveIsLegal = game.makeMove(pos,end) // game.legalMove(start,end)
+                        val p = 
+                            if moveIsLegal then
+                                svgPieces.get(end) match
+                                    case None => 
+                                    case Some(value) =>
+                                        val toRemove = pcs.children.indexOf(value._1)
+                                        println("to remove value: " + toRemove)
+                                        if toRemove >= 0 then 
+                                            break = true
+                                            pcs.children.remove(toRemove)
+                                clampToSquare(end, gridPane.width.value, gridPane.height.value, 0, 0)
+                            else
+                                clampToSquare(start, gridPane.width.value, gridPane.height.value, 0, 0)
+                        svg.layoutX.set(p._1)
+                        svg.layoutY.set(p._2)
+                        svg.setOpacity(1)
+                        //svg.fill = ???
+                        svgPieces.remove(start)
+                        svgPieces.update(end,(svg, ((offsetX, offsetY), (x,y))))
+
+                        println(f"After update: map size: ${svgPieces.size} , pcs size: ${pcs.children.length}")
+                        e.consume()
+                        //if break then boundary.break("hello")
+                )
+        )
+        )
 
         stage = new JFXApp3.PrimaryStage {
         // override def width = mixedPane.width
@@ -208,6 +228,7 @@ object ChessFx extends JFXApp3 {
         }
             //gridPane.children = dragLabel
         }
+        //timer.start()
 
     }
 
@@ -231,8 +252,8 @@ object ChessFx extends JFXApp3 {
     private def clamp(newX : Double, newY : Double, w : Double, h : Double) = 
         (math.min( math.max(0, newX), w) , math.min( math.max(0, newY), h))
 
-    private def initBoard(w : Double, h : Double): ObservableMap[Position,( SVGPath, ((Double, Double), (Double, Double)))] = 
-        ObservableMap(game.board.map((pos, piece) => (pos, ( makeSVG(piece, pos, 800, 800),  ( (0d,0d), (0d,0d)  )  )) ).toSeq*)
+    private def initBoard(w : Double, h : Double): mutable.Map[Position,( SVGPath, ((Double, Double), (Double, Double)))] = 
+        mutable.Map(game.board.map((pos, piece) => (pos, ( makeSVG(piece, pos, 800, 800),  ( (0d,0d), (0d,0d)  )  )) ).toSeq*)
 
     
     private def makeSVG(piece: Piece, pos: Position, w : Double, h: Double): SVGPath = 
